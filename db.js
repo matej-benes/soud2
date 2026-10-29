@@ -182,15 +182,15 @@ async function createCase(payload) {
   const verdict = `Soudní senát vedený soudcem ${judge.name} přijal žádost sp. zn. ${caseNum}. Zahájeno hloubkové šetření rodinných vztahů dle zákonné lhůty.`;
 
   if (backend === "turso") {
-    const r = await tursoClient.execute({
+    await tursoClient.execute({
       sql: `INSERT INTO cases (case_number, department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description, status, created_at, deadline_at, resolve_at, judge_name, verdict, pdf_base64, pin_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       args: [caseNum, payload.department, payload.applicant_name, payload.applicant_phone || "", payload.spouse_name || "", payload.spouse_phone || "", payload.other_parties || "", payload.description, "Zahájeno (Probíhá šetření)", now.toISOString(), deadlineAt.toISOString(), resolveAt.toISOString(), judge.name, verdict, null, payload.pin_hash || null]
     });
-    return await getCaseById(Number(r.lastInsertRowid));
+    return await getCaseByNumber(caseNum);
   }
   if (backend === "postgres") {
-    const rows = await pgSql`INSERT INTO cases (case_number, department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description, status, created_at, deadline_at, resolve_at, judge_name, verdict, pdf_base64, pin_hash) VALUES (${caseNum}, ${payload.department}, ${payload.applicant_name}, ${payload.applicant_phone || ""}, ${payload.spouse_name || ""}, ${payload.spouse_phone || ""}, ${payload.other_parties || ""}, ${payload.description}, ${"Zahájeno (Probíhá šetření)"}, ${now.toISOString()}, ${deadlineAt.toISOString()}, ${resolveAt.toISOString()}, ${judge.name}, ${verdict}, ${null}, ${payload.pin_hash || null}) RETURNING id`;
-    return await getCaseById(rows[0].id);
+    await pgSql`INSERT INTO cases (case_number, department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description, status, created_at, deadline_at, resolve_at, judge_name, verdict, pdf_base64, pin_hash) VALUES (${caseNum}, ${payload.department}, ${payload.applicant_name}, ${payload.applicant_phone || ""}, ${payload.spouse_name || ""}, ${payload.spouse_phone || ""}, ${payload.other_parties || ""}, ${payload.description}, ${"Zahájeno (Probíhá šetření)"}, ${now.toISOString()}, ${deadlineAt.toISOString()}, ${resolveAt.toISOString()}, ${judge.name}, ${verdict}, ${null}, ${payload.pin_hash || null})`;
+    return await getCaseByNumber(caseNum);
   }
   const data = initJson();
   const c = { id: data.nextCaseId++, case_number: caseNum, department: payload.department, applicant_name: payload.applicant_name, applicant_phone: payload.applicant_phone || "", spouse_name: payload.spouse_name || "", spouse_phone: payload.spouse_phone || "", other_parties: payload.other_parties || "", description: payload.description, status: "Zahájeno (Probíhá šetření)", created_at: now.toISOString(), deadline_at: deadlineAt.toISOString(), resolve_at: resolveAt.toISOString(), judge_name: judge.name, verdict, pdf_base64: null, pin_hash: payload.pin_hash || null };

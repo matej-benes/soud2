@@ -115,6 +115,9 @@ app.post("/create_case", upload.array("files", 5), async (req, res) => {
   const pinHash = db.hashPin(pin);
 
   const c = await db.createCase({ department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description, pin_hash: pinHash });
+  console.log("createCase result:", c ? c.id + " " + c.case_number : "NULL");
+
+  if (!c) throw new Error("Spis se nepodařilo uložit do databáze.");
 
   // Save uploaded attachments
   if (req.files && req.files.length) {
