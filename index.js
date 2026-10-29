@@ -99,6 +99,12 @@ app.get("/case/:id/pdf", async (req, res) => {
   res.send(buf);
 });
 
+// Reset all cases and proceedings (admin)
+app.post("/admin/reset", async (req, res) => {
+  db.resetAll();
+  res.redirect("/");
+});
+
 // Force resolve (admin/testing)
 app.post("/resolve/:id", async (req, res) => {
   const c = db.getCaseById(parseInt(req.params.id));

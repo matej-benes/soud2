@@ -120,7 +120,13 @@ function updateCase(id, patch) {
   return data.cases[idx];
 }
 
+function resetAll() {
+  const data = { cases: [], staff: defaultStaff, sms_logs: [], nextCaseId: 1, nextLogId: 1 };
+  save(data);
+  return data;
+}
+
 module.exports = {
   getData, getStaff, getStaffByDept, getCases, getCaseById, getCaseByNumber,
-  createCase, addSmsLog, getSmsLogs, getSmsLogsByCase, updateCase
+  createCase, addSmsLog, getSmsLogs, getSmsLogsByCase, updateCase, resetAll
 };
