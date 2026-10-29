@@ -1,27 +1,17 @@
 const fs = require("fs");
 const path = require("path");
 
+const TURSO_URL = process.env.TURSO_DATABASE_URL;
+const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
+const USE_TURSO = !!(TURSO_URL && TURSO_TOKEN);
+
+let tursoClient = null;
+if (USE_TURSO) {
+  const { createClient } = require("@libsql/client");
+  tursoClient = createClient({ url: TURSO_URL, authToken: TURSO_TOKEN });
+}
+
 const DATA_FILE = process.env.DATA_FILE || (process.env.VERCEL ? "/tmp/soud-data.json" : path.join(__dirname, "data.json"));
-
-function load() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, "utf8");
-      return JSON.parse(raw);
-    }
-  } catch (e) {
-    console.error("DB load error:", e.message);
-  }
-  return null;
-}
-
-function save(data) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-  } catch (e) {
-    console.error("DB save error:", e.message);
-  }
-}
 
 const defaultStaff = [
   { department: "OSPOD", name: "Mgr. Alena Dvořáková", role: "Sociální kurátorka", personality: "Empatická, ale přísná na ochranu zájmů dětí." },
@@ -31,16 +21,26 @@ const defaultStaff = [
   { department: "Arbitráž", name: "PhDr. Eva Kratochvílová", role: "Vztahová arbitra a psycholožka", personality: "Specialistka na složité vztahy dvou, tří a více partnerů." }
 ];
 
-function initData() {
-  let data = load();
+// ---------- JSON file backend (fallback) ----------
+function loadJson() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    }
+  } catch (e) { console.error("DB load error:", e.message); }
+  return null;
+}
+function saveJson(data) {
+  try { fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2)); }
+  catch (e) { console.error("DB save error:", e.message); }
+}
+function initJson() {
+  let data = loadJson();
   if (!data) {
     data = { cases: [], staff: defaultStaff, sms_logs: [], nextCaseId: 1, nextLogId: 1 };
-    save(data);
+    saveJson(data);
   }
-  if (!data.staff || data.staff.length === 0) {
-    data.staff = defaultStaff;
-    save(data);
-  }
+  if (!data.staff || data.staff.length === 0) { data.staff = defaultStaff; saveJson(data); }
   if (!data.cases) data.cases = [];
   if (!data.sms_logs) data.sms_logs = [];
   if (!data.nextCaseId) data.nextCaseId = (data.cases.length ? Math.max(...data.cases.map(c => c.id)) + 1 : 1);
@@ -48,19 +48,134 @@ function initData() {
   return data;
 }
 
-function getData() { return initData(); }
+// ---------- Turso backend ----------
+async function initTurso() {
+  await tursoClient.execute(`CREATE TABLE IF NOT EXISTS cases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    case_number TEXT UNIQUE,
+    department TEXT,
+    applicant_name TEXT,
+    applicant_phone TEXT,
+    spouse_name TEXT,
+    spouse_phone TEXT,
+    other_parties TEXT,
+    description TEXT,
+    status TEXT,
+    created_at TEXT,
+    deadline_at TEXT,
+    resolve_at TEXT,
+    judge_name TEXT,
+    verdict TEXT,
+    pdf_base64 TEXT
+  )`);
+  await tursoClient.execute(`CREATE TABLE IF NOT EXISTS staff (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    department TEXT,
+    name TEXT,
+    role TEXT,
+    personality TEXT
+  )`);
+  await tursoClient.execute(`CREATE TABLE IF NOT EXISTS sms_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    case_number TEXT,
+    recipient_phone TEXT,
+    recipient_name TEXT,
+    message TEXT,
+    sent_at TEXT,
+    status TEXT
+  )`);
+  const r = await tursoClient.execute("SELECT COUNT(*) as c FROM staff");
+  if ((r.rows[0].c || r.rows[0][0]) == 0) {
+    for (const s of defaultStaff) {
+      await tursoClient.execute({
+        sql: "INSERT INTO staff (department, name, role, personality) VALUES (?,?,?,?)",
+        args: [s.department, s.name, s.role, s.personality]
+      });
+    }
+  }
+}
 
-function getStaff() { return getData().staff; }
-function getStaffByDept(dept) { return getData().staff.find(s => s.department === dept) || { name: "JUDr. Jan Spravedlivý", role: "Soudce", personality: "Nestranný" }; }
+async function initDb() {
+  if (USE_TURSO) await initTurso();
+  else initJson();
+}
+// run init lazily
+let initPromise = null;
+function ensureInit() {
+  if (!initPromise) initPromise = initDb();
+  return initPromise;
+}
 
-function getCases() { return getData().cases.sort((a, b) => b.id - a.id); }
-function getCaseById(id) { return getData().cases.find(c => c.id === id); }
-function getCaseByNumber(num) { return getData().cases.find(c => c.case_number === num); }
+// ---------- Unified async API ----------
+async function getStaff() {
+  await ensureInit();
+  if (USE_TURSO) {
+    const r = await tursoClient.execute("SELECT department, name, role, personality FROM staff");
+    return r.rows.map(row => ({ department: row.department, name: row.name, role: row.role, personality: row.personality }));
+  }
+  return initJson().staff;
+}
 
-function createCase(payload) {
-  const data = getData();
+async function getStaffByDept(dept) {
+  const staff = await getStaff();
+  return staff.find(s => s.department === dept) || { name: "JUDr. Jan Spravedlivý", role: "Soudce", personality: "Nestranný", department: dept };
+}
+
+async function getCases() {
+  await ensureInit();
+  if (USE_TURSO) {
+    const r = await tursoClient.execute("SELECT * FROM cases ORDER BY id DESC");
+    return r.rows.map(mapCase);
+  }
+  return initJson().cases.slice().sort((a, b) => b.id - a.id);
+}
+
+function mapCase(row) {
+  // libsql returns object-like rows
+  return {
+    id: row.id,
+    case_number: row.case_number,
+    department: row.department,
+    applicant_name: row.applicant_name,
+    applicant_phone: row.applicant_phone,
+    spouse_name: row.spouse_name,
+    spouse_phone: row.spouse_phone,
+    other_parties: row.other_parties,
+    description: row.description,
+    status: row.status,
+    created_at: row.created_at,
+    deadline_at: row.deadline_at,
+    resolve_at: row.resolve_at,
+    judge_name: row.judge_name,
+    verdict: row.verdict,
+    pdf_base64: row.pdf_base64
+  };
+}
+
+async function getCaseById(id) {
+  await ensureInit();
+  if (USE_TURSO) {
+    const r = await tursoClient.execute({ sql: "SELECT * FROM cases WHERE id = ?", args: [id] });
+    if (r.rows.length === 0) return null;
+    return mapCase(r.rows[0]);
+  }
+  return initJson().cases.find(c => c.id === id) || null;
+}
+
+async function getCaseByNumber(num) {
+  await ensureInit();
+  if (USE_TURSO) {
+    const r = await tursoClient.execute({ sql: "SELECT * FROM cases WHERE case_number = ?", args: [num] });
+    if (r.rows.length === 0) return null;
+    return mapCase(r.rows[0]);
+  }
+  return initJson().cases.find(c => c.case_number === num) || null;
+}
+
+async function createCase(payload) {
+  await ensureInit();
   const caseNum = `${Math.floor(Math.random() * 9) + 1}T ${Math.floor(Math.random() * 90) + 10}/2026`;
-  const judge = getStaffByDept(payload.department);
+  const judge = await getStaffByDept(payload.department);
   const now = new Date();
   const legalDays = parseInt(process.env.LEGAL_DEADLINE_DAYS || "30", 10);
   const delaySeconds = process.env.RESOLVE_DELAY_SECONDS
@@ -68,7 +183,20 @@ function createCase(payload) {
     : legalDays * 24 * 60 * 60;
   const resolveAt = new Date(now.getTime() + delaySeconds * 1000);
   const deadlineAt = new Date(resolveAt.getTime());
+  const verdict = `Soudní senát vedený soudcem ${judge.name} přijal žádost sp. zn. ${caseNum}. Zahájeno hloubkové šetření rodinných vztahů dle zákonné lhůty.`;
 
+  if (USE_TURSO) {
+    const r = await tursoClient.execute({
+      sql: `INSERT INTO cases (case_number, department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description, status, created_at, deadline_at, resolve_at, judge_name, verdict, pdf_base64)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      args: [caseNum, payload.department, payload.applicant_name, payload.applicant_phone || "", payload.spouse_name || "", payload.spouse_phone || "", payload.other_parties || "", payload.description,
+        "Zahájeno (Probíhá šetření)", now.toISOString(), deadlineAt.toISOString(), resolveAt.toISOString(), judge.name, verdict, null]
+    });
+    const id = Number(r.lastInsertRowid);
+    return await getCaseById(id);
+  }
+
+  const data = initJson();
   const c = {
     id: data.nextCaseId++,
     case_number: caseNum,
@@ -84,16 +212,24 @@ function createCase(payload) {
     deadline_at: deadlineAt.toISOString(),
     resolve_at: resolveAt.toISOString(),
     judge_name: judge.name,
-    verdict: `Soudní senát vedený soudcem ${judge.name} přijal žádost sp. zn. ${caseNum}. Zahájeno hloubkové šetření rodinných vztahů dle zákonné lhůty.`,
+    verdict,
     pdf_base64: null
   };
   data.cases.push(c);
-  save(data);
+  saveJson(data);
   return c;
 }
 
-function addSmsLog(caseNumber, phone, name, message, status) {
-  const data = getData();
+async function addSmsLog(caseNumber, phone, name, message, status) {
+  await ensureInit();
+  if (USE_TURSO) {
+    await tursoClient.execute({
+      sql: "INSERT INTO sms_logs (case_number, recipient_phone, recipient_name, message, sent_at, status) VALUES (?,?,?,?,?,?)",
+      args: [caseNumber, phone, name, message, new Date().toISOString(), status]
+    });
+    return;
+  }
+  const data = initJson();
   const log = {
     id: data.nextLogId++,
     case_number: caseNumber,
@@ -104,29 +240,67 @@ function addSmsLog(caseNumber, phone, name, message, status) {
     status: status
   };
   data.sms_logs.push(log);
-  save(data);
+  saveJson(data);
   return log;
 }
 
-function getSmsLogs(limit = 20) { return getData().sms_logs.sort((a,b) => b.id - a.id).slice(0, limit); }
-function getSmsLogsByCase(caseNumber) { return getData().sms_logs.filter(l => l.case_number === caseNumber).sort((a,b) => a.id - b.id); }
+async function getSmsLogs(limit = 20) {
+  await ensureInit();
+  if (USE_TURSO) {
+    const r = await tursoClient.execute({ sql: "SELECT * FROM sms_logs ORDER BY id DESC LIMIT ?", args: [limit] });
+    return r.rows.map(row => ({ id: row.id, case_number: row.case_number, recipient_phone: row.recipient_phone, recipient_name: row.recipient_name, message: row.message, sent_at: row.sent_at, status: row.status }));
+  }
+  return initJson().sms_logs.slice().sort((a, b) => b.id - a.id).slice(0, limit);
+}
 
-function updateCase(id, patch) {
-  const data = getData();
+async function getSmsLogsByCase(caseNumber) {
+  await ensureInit();
+  if (USE_TURSO) {
+    const r = await tursoClient.execute({ sql: "SELECT * FROM sms_logs WHERE case_number = ? ORDER BY id ASC", args: [caseNumber] });
+    return r.rows.map(row => ({ id: row.id, case_number: row.case_number, recipient_phone: row.recipient_phone, recipient_name: row.recipient_name, message: row.message, sent_at: row.sent_at, status: row.status }));
+  }
+  return initJson().sms_logs.filter(l => l.case_number === caseNumber).sort((a, b) => a.id - b.id);
+}
+
+async function updateCase(id, patch) {
+  await ensureInit();
+  if (USE_TURSO) {
+    const sets = [];
+    const args = [];
+    for (const k of Object.keys(patch)) {
+      sets.push(`${k} = ?`);
+      args.push(patch[k]);
+    }
+    if (sets.length === 0) return await getCaseById(id);
+    args.push(id);
+    await tursoClient.execute({ sql: `UPDATE cases SET ${sets.join(", ")} WHERE id = ?`, args });
+    return await getCaseById(id);
+  }
+  const data = initJson();
   const idx = data.cases.findIndex(c => c.id === id);
   if (idx === -1) return null;
   data.cases[idx] = { ...data.cases[idx], ...patch };
-  save(data);
+  saveJson(data);
   return data.cases[idx];
 }
 
-function resetAll() {
+async function resetAll() {
+  await ensureInit();
+  if (USE_TURSO) {
+    await tursoClient.execute("DELETE FROM cases");
+    await tursoClient.execute("DELETE FROM sms_logs");
+    // reset sqlite sequence
+    try { await tursoClient.execute("DELETE FROM sqlite_sequence WHERE name IN ('cases','sms_logs')"); } catch (e) {}
+    return;
+  }
   const data = { cases: [], staff: defaultStaff, sms_logs: [], nextCaseId: 1, nextLogId: 1 };
-  save(data);
+  saveJson(data);
   return data;
 }
 
 module.exports = {
-  getData, getStaff, getStaffByDept, getCases, getCaseById, getCaseByNumber,
+  USE_TURSO,
+  ensureInit,
+  getStaff, getStaffByDept, getCases, getCaseById, getCaseByNumber,
   createCase, addSmsLog, getSmsLogs, getSmsLogsByCase, updateCase, resetAll
 };

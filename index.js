@@ -13,15 +13,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// Lazy resolution of due cases (simulates real legal deadlines passing)
 async function processDueCases() {
   const now = new Date();
-  const cases = db.getCases();
+  const cases = await db.getCases();
   for (const c of cases) {
     if (c.status === "Zahájeno (Probíhá šetření)" && c.resolve_at && new Date(c.resolve_at) <= now) {
-      const judge = db.getStaffByDept(c.department);
+      const judge = await db.getStaffByDept(c.department);
       const verdict = ai.generateAnalysis(c, "verdikt");
-      // Generate PDF decision
       let pdfBase64 = null;
       try {
         const buf = await pdf.generateDecisionPdf(c, verdict, judge);
@@ -29,8 +27,8 @@ async function processDueCases() {
       } catch (e) {
         console.error("PDF gen error:", e.message);
       }
-      db.updateCase(c.id, { status: "Ukončeno - Vydán rozsudek", verdict, pdf_base64: pdfBase64 });
-      const updated = db.getCaseById(c.id);
+      await db.updateCase(c.id, { status: "Ukončeno - Vydán rozsudek", verdict, pdf_base64: pdfBase64 });
+      const updated = await db.getCaseById(c.id);
       const baseUrl = process.env.BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
       const pdfLink = baseUrl ? `${baseUrl}/case/${updated.id}/pdf` : `/case/${updated.id}/pdf`;
       const completionMsg = (recipientType) => `Vážený/á ${recipientType === "applicant" ? updated.applicant_name : updated.spouse_name}, ve věci sp. zn. ${updated.case_number} byl vydán konečný soudní rozsudek oddělením ${updated.department}. Rozhodnutí (PDF) ke stažení: ${pdfLink} . Řízení je tímto pravomocně ukončeno.`;
@@ -45,16 +43,17 @@ async function processDueCases() {
 }
 
 app.get("/", async (req, res) => {
+  await db.ensureInit();
   await processDueCases();
-  const cases = db.getCases();
-  const staff = db.getStaff();
-  const smsLogs = db.getSmsLogs(20);
+  const cases = await db.getCases();
+  const staff = await db.getStaff();
+  const smsLogs = await db.getSmsLogs(20);
   res.render("index", { cases, staff, smsLogs });
 });
 
 app.post("/create_case", async (req, res) => {
   const { department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description } = req.body;
-  const c = db.createCase({ department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description });
+  const c = await db.createCase({ department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description });
   const caseData = {
     case_number: c.case_number, department: c.department,
     applicant_name: c.applicant_name, spouse_name: c.spouse_name,
@@ -70,24 +69,23 @@ app.post("/create_case", async (req, res) => {
 });
 
 app.get("/case/:id", async (req, res) => {
+  await db.ensureInit();
   await processDueCases();
-  const c = db.getCaseById(parseInt(req.params.id));
+  const c = await db.getCaseById(parseInt(req.params.id));
   if (!c) return res.status(404).send("Případ nenalezen");
-  const logs = db.getSmsLogsByCase(c.case_number);
+  const logs = await db.getSmsLogsByCase(c.case_number);
   res.render("case_detail", { c, logs });
 });
 
-// Download PDF decision
 app.get("/case/:id/pdf", async (req, res) => {
-  const c = db.getCaseById(parseInt(req.params.id));
+  const c = await db.getCaseById(parseInt(req.params.id));
   if (!c) return res.status(404).send("Případ nenalezen");
   if (!c.pdf_base64) {
-    // Generate on demand if missing
-    const judge = db.getStaffByDept(c.department);
+    const judge = await db.getStaffByDept(c.department);
     const verdict = c.verdict || ai.generateAnalysis(c, "verdikt");
     try {
       const buf = await pdf.generateDecisionPdf(c, verdict, judge);
-      db.updateCase(c.id, { pdf_base64: buf.toString("base64"), verdict });
+      await db.updateCase(c.id, { pdf_base64: buf.toString("base64"), verdict });
       res.set("Content-Type", "application/pdf");
       res.set("Content-Disposition", `attachment; filename="rozhodnuti_${c.case_number.replace(/\s/g, "_")}.pdf"`);
       return res.send(buf);
@@ -101,32 +99,29 @@ app.get("/case/:id/pdf", async (req, res) => {
   res.send(buf);
 });
 
-// Reset all cases and proceedings (admin)
-app.post("/admin/reset", async (req, res) => {
-  db.resetAll();
-  res.redirect("/");
-});
-
-// Force resolve (admin/testing)
 app.post("/resolve/:id", async (req, res) => {
-  const c = db.getCaseById(parseInt(req.params.id));
+  const c = await db.getCaseById(parseInt(req.params.id));
   if (!c) return res.status(404).send("Případ nenalezen");
   if (c.status !== "Zahájeno (Probíhá šetření)") return res.redirect(`/case/${c.id}`);
-  // temporarily set resolve_at to past
-  db.updateCase(c.id, { resolve_at: new Date(Date.now() - 1000).toISOString() });
+  await db.updateCase(c.id, { resolve_at: new Date(Date.now() - 1000).toISOString() });
   await processDueCases();
   res.redirect(`/case/${c.id}`);
 });
 
-// Cron endpoint (Vercel cron)
+app.post("/admin/reset", async (req, res) => {
+  await db.resetAll();
+  res.redirect("/");
+});
+
 app.get("/api/cron", async (req, res) => {
+  await db.ensureInit();
   await processDueCases();
-  res.json({ ok: true, processed: new Date().toISOString() });
+  res.json({ ok: true, backend: db.USE_TURSO ? "turso" : "json", processed: new Date().toISOString() });
 });
 
 module.exports = app;
 
 if (require.main === module) {
   const port = process.env.PORT || 3000;
-  app.listen(port, () => console.log(`AI Soud běží na http://localhost:${port}`));
+  app.listen(port, () => console.log(`AI Soud běží na http://localhost:${port} (backend: ${db.USE_TURSO ? "turso" : "json"})`));
 }
