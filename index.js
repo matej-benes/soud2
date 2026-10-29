@@ -103,7 +103,7 @@ app.get("/", async (req, res) => {
   if (dept) cases = cases.filter(c => c.department === dept);
   if (status) cases = cases.filter(c => c.status === status || (status === "pending" && c.status.indexOf("Probíhá") >= 0) || (status === "resolved" && c.status.indexOf("Ukončeno") === 0));
 
-  res.render("index", { cases, staff, smsLogs, q, dept, status });
+  res.render("index", { cases, staff, smsLogs, q, dept, status, error: req.query.error || null });
 });
 
 app.post("/create_case", upload.array("files", 5), async (req, res) => {
@@ -146,7 +146,7 @@ app.post("/create_case", upload.array("files", 5), async (req, res) => {
 
   } catch (e) {
     console.error("create_case error:", e.message, e.stack);
-    res.redirect("/");
+    res.redirect("/?error=" + encodeURIComponent(e.message));
     return;
   }
   res.redirect("/");
@@ -260,6 +260,25 @@ app.get("/api/cron", async (req, res) => {
   await db.ensureInit();
   await processDueCases();
   res.json({ ok: true, backend: db.backend, processed: new Date().toISOString() });
+});
+
+// Debug endpoint
+app.get("/debug", async (req, res) => {
+  await db.ensureInit();
+  const cases = await db.getCases();
+  res.json({
+    backend: db.backend,
+    env: {
+      TURSO_DATABASE_URL: !!process.env.TURSO_DATABASE_URL,
+      TURSO_AUTH_TOKEN: !!process.env.TURSO_AUTH_TOKEN,
+      POSTGRES_URL: !!process.env.POSTGRES_URL,
+      DATABASE_URL: !!process.env.DATABASE_URL,
+      NEON_DATABASE_URL: !!process.env.NEON_DATABASE_URL,
+      VERCEL_URL: process.env.VERCEL_URL || null
+    },
+    caseCount: cases.length,
+    cases: cases.map(c => ({ id: c.id, case_number: c.case_number, status: c.status }))
+  });
 });
 
 // Wizard page

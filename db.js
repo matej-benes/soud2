@@ -5,7 +5,7 @@ const crypto = require("crypto");
 // ---------- Backend selection ----------
 const TURSO_URL = process.env.TURSO_DATABASE_URL;
 const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
-const PG_URL = process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+const PG_URL = process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
 
 let backend = "json";
 let tursoClient = null;
@@ -90,7 +90,7 @@ function ensureInit() {
       if (backend === "turso") await initTurso();
       else if (backend === "postgres") await initPg();
       else initJson();
-    })();
+    })().catch(e => { initPromise = null; console.error("DB init error:", e.message); throw e; });
   }
   return initPromise;
 }

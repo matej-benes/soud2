@@ -51,6 +51,13 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="mb-6 bg-red-900/40 border border-red-700 text-red-200 rounded-2xl p-4 text-sm">
+            ⚠️ Chyba při ukládání žádosti: <%= error %>
+            <div class="text-xs text-red-300/70 mt-1">Zkontrolujte připojení k databázi (env proměnné) na /debug.</div>
+        </div>
+        <% } %>
+
         <!-- Stats row -->
         <%
             const totalCases = cases ? cases.length : 0;
