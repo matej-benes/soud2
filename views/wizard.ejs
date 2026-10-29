@@ -138,9 +138,12 @@
                     <div class="bg-amber-900/30 border border-amber-700/50 rounded-xl p-4 text-xs text-amber-200">
                         ⚠️ <strong>Důležité:</strong> Po odeslání obdržíte SMS s 6místným PINem. Uchovejte si ho – bez něj nelze přistoupit k detailům spisu, rozhodnutí (PDF) ani přílohám. Nikomu ho nesdělujte.
                     </div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 font-semibold py-3 rounded-xl transition shadow-lg text-white">
+                    <button type="submit" id="wizSubmit" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 font-semibold py-3 rounded-xl transition shadow-lg text-white">
                         🏛️ Odeslat žádost k soudu
                     </button>
+                    <script>
+                    (function(){var f=document.getElementById('wizardForm'); if(f){f.addEventListener('submit',function(){var b=document.getElementById('wizSubmit'); if(b){b.disabled=true;b.innerHTML='<span class="animate-spin inline-block">⏳</span> Odesílám...';}});}})();
+                    </script>
                 </div>
             </div>
 
