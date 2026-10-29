@@ -4,6 +4,7 @@ const path = require("path");
 const db = require("./db");
 const ai = require("./ai");
 const sms = require("./sms");
+const pdf = require("./pdf");
 
 const app = express();
 app.set("view engine", "ejs");
@@ -18,14 +19,24 @@ async function processDueCases() {
   const cases = db.getCases();
   for (const c of cases) {
     if (c.status === "Zahájeno (Probíhá šetření)" && c.resolve_at && new Date(c.resolve_at) <= now) {
+      const judge = db.getStaffByDept(c.department);
       const verdict = ai.generateAnalysis(c, "verdikt");
-      db.updateCase(c.id, { status: "Ukončeno - Vydán rozsudek", verdict });
+      // Generate PDF decision
+      let pdfBase64 = null;
+      try {
+        const buf = await pdf.generateDecisionPdf(c, verdict, judge);
+        pdfBase64 = buf.toString("base64");
+      } catch (e) {
+        console.error("PDF gen error:", e.message);
+      }
+      db.updateCase(c.id, { status: "Ukončeno - Vydán rozsudek", verdict, pdf_base64: pdfBase64 });
       const updated = db.getCaseById(c.id);
+      const completionMsg = (recipientType) => `Vážený/á ${recipientType === "applicant" ? updated.applicant_name : updated.spouse_name}, ve věci sp. zn. ${updated.case_number} byl vydán konečný soudní rozsudek oddělením ${updated.department}. Rozhodnutí (PDF) je dostupné v portálu soudu. Řízení je tímto pravomocně ukončeno.`;
       if (updated.applicant_phone) {
-        await sms.sendSms(updated.applicant_phone, ai.generateSmsContent("applicant", updated, "verdikt"), updated.case_number, updated.applicant_name);
+        await sms.sendSms(updated.applicant_phone, completionMsg("applicant"), updated.case_number, updated.applicant_name);
       }
       if (updated.spouse_phone) {
-        await sms.sendSms(updated.spouse_phone, ai.generateSmsContent("spouse", updated, "verdikt"), updated.case_number, updated.spouse_name);
+        await sms.sendSms(updated.spouse_phone, completionMsg("spouse"), updated.case_number, updated.spouse_name);
       }
     }
   }
@@ -62,6 +73,47 @@ app.get("/case/:id", async (req, res) => {
   if (!c) return res.status(404).send("Případ nenalezen");
   const logs = db.getSmsLogsByCase(c.case_number);
   res.render("case_detail", { c, logs });
+});
+
+// Download PDF decision
+app.get("/case/:id/pdf", async (req, res) => {
+  const c = db.getCaseById(parseInt(req.params.id));
+  if (!c) return res.status(404).send("Případ nenalezen");
+  if (!c.pdf_base64) {
+    // Generate on demand if missing
+    const judge = db.getStaffByDept(c.department);
+    const verdict = c.verdict || ai.generateAnalysis(c, "verdikt");
+    try {
+      const buf = await pdf.generateDecisionPdf(c, verdict, judge);
+      db.updateCase(c.id, { pdf_base64: buf.toString("base64"), verdict });
+      res.set("Content-Type", "application/pdf");
+      res.set("Content-Disposition", `attachment; filename="rozhodnuti_${c.case_number.replace(/\s/g, "_")}.pdf"`);
+      return res.send(buf);
+    } catch (e) {
+      return res.status(500).send("Chyba generování PDF: " + e.message);
+    }
+  }
+  const buf = Buffer.from(c.pdf_base64, "base64");
+  res.set("Content-Type", "application/pdf");
+  res.set("Content-Disposition", `attachment; filename="rozhodnuti_${c.case_number.replace(/\s/g, "_")}.pdf"`);
+  res.send(buf);
+});
+
+// Force resolve (admin/testing)
+app.post("/resolve/:id", async (req, res) => {
+  const c = db.getCaseById(parseInt(req.params.id));
+  if (!c) return res.status(404).send("Případ nenalezen");
+  if (c.status !== "Zahájeno (Probíhá šetření)") return res.redirect(`/case/${c.id}`);
+  // temporarily set resolve_at to past
+  db.updateCase(c.id, { resolve_at: new Date(Date.now() - 1000).toISOString() });
+  await processDueCases();
+  res.redirect(`/case/${c.id}`);
+});
+
+// Cron endpoint (Vercel cron)
+app.get("/api/cron", async (req, res) => {
+  await processDueCases();
+  res.json({ ok: true, processed: new Date().toISOString() });
 });
 
 module.exports = app;

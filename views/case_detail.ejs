@@ -56,6 +56,18 @@
             <div>
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Výsledky vyšetřování a soudní verdikt</h3>
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 text-slate-200 text-sm whitespace-pre-line leading-relaxed"><%= c.verdict %></div>
+                <% if (c.status.indexOf('Ukončeno') === 0) { %>
+                <div class="mt-3 flex gap-2">
+                    <a href="/case/<%= c.id %>/pdf" class="inline-block bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">📄 Stáhnout rozhodnutí (PDF)</a>
+                </div>
+                <% } else { %>
+                <div class="mt-3">
+                    <form action="/resolve/<%= c.id %>" method="POST" class="inline">
+                        <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">⚡ Vynutit vyřešení (test)</button>
+                    </form>
+                    <span class="text-xs text-slate-500 ml-2">Pro produkci se řízení vyřeší automaticky po uplynutí lhůty.</span>
+                </div>
+                <% } %>
             </div>
             <div>
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Odeslané Odorik SMS zprávy v tomto spisu</h3>

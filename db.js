@@ -62,9 +62,12 @@ function createCase(payload) {
   const caseNum = `${Math.floor(Math.random() * 9) + 1}T ${Math.floor(Math.random() * 90) + 10}/2026`;
   const judge = getStaffByDept(payload.department);
   const now = new Date();
-  const delaySeconds = parseInt(process.env.RESOLVE_DELAY_SECONDS || "60", 10);
+  const legalDays = parseInt(process.env.LEGAL_DEADLINE_DAYS || "30", 10);
+  const delaySeconds = process.env.RESOLVE_DELAY_SECONDS
+    ? parseInt(process.env.RESOLVE_DELAY_SECONDS, 10)
+    : legalDays * 24 * 60 * 60;
   const resolveAt = new Date(now.getTime() + delaySeconds * 1000);
-  const deadlineAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const deadlineAt = new Date(resolveAt.getTime());
 
   const c = {
     id: data.nextCaseId++,
@@ -81,7 +84,8 @@ function createCase(payload) {
     deadline_at: deadlineAt.toISOString(),
     resolve_at: resolveAt.toISOString(),
     judge_name: judge.name,
-    verdict: `Soudní senát vedený soudcem ${judge.name} přijal žádost sp. zn. ${caseNum}. Zahájeno hloubkové šetření rodinných vztahů dle zákonné lhůty.`
+    verdict: `Soudní senát vedený soudcem ${judge.name} přijal žádost sp. zn. ${caseNum}. Zahájeno hloubkové šetření rodinných vztahů dle zákonné lhůty.`,
+    pdf_base64: null
   };
   data.cases.push(c);
   save(data);
