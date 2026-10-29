@@ -24,11 +24,15 @@ async function sendSms(phone, message, caseNumber, recipientName) {
       params.append("password", pass);
       params.append("recipient", recipient);
       params.append("message", fullMessage);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(ODORIK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params.toString()
+        body: params.toString(),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       const text = await res.text();
       if (text.toLowerCase().includes("successfully")) {
         status = "SENT (" + text.trim() + ")";

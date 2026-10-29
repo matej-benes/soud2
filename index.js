@@ -11,6 +11,20 @@ const pdf = require("./pdf");
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024, files: 5 } });
 
+// Vercel waitUntil for background work (SMS) after response
+let waitUntilFn = null;
+try {
+  const vf = require("@vercel/functions");
+  waitUntilFn = vf.waitUntil || null;
+} catch (e) { waitUntilFn = null; }
+function runInBackground(promise) {
+  if (waitUntilFn) {
+    try { waitUntilFn(promise); return; } catch (e) {}
+  }
+  // Fallback: fire and forget (local dev)
+  promise.catch(e => console.error("bg error:", e.message));
+}
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
@@ -57,12 +71,11 @@ async function processDueCases() {
       const baseUrl = process.env.BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
       const pdfLink = baseUrl ? `${baseUrl}/case/${updated.id}/pdf` : `/case/${updated.id}/pdf`;
       const completionMsg = (recipientType) => `Vážený/á ${recipientType === "applicant" ? updated.applicant_name : updated.spouse_name}, ve věci sp. zn. ${updated.case_number} byl vydán konečný soudní rozsudek oddělením ${updated.department}. Rozhodnutí (PDF) ke stažení: ${pdfLink} . Řízení je tímto pravomocně ukončeno.`;
-      if (updated.applicant_phone) {
-        await sms.sendSms(updated.applicant_phone, completionMsg("applicant"), updated.case_number, updated.applicant_name);
-      }
-      if (updated.spouse_phone) {
-        await sms.sendSms(updated.spouse_phone, completionMsg("spouse"), updated.case_number, updated.spouse_name);
-      }
+      const smsWork = (async () => {
+        if (updated.applicant_phone) await sms.sendSms(updated.applicant_phone, completionMsg("applicant"), updated.case_number, updated.applicant_name);
+        if (updated.spouse_phone) await sms.sendSms(updated.spouse_phone, completionMsg("spouse"), updated.case_number, updated.spouse_name);
+      })();
+      runInBackground(smsWork);
     }
   }
 }
@@ -93,7 +106,8 @@ app.get("/", async (req, res) => {
   res.render("index", { cases, staff, smsLogs, q, dept, status });
 });
 
-app.post("/create_case", async (req, res) => {
+app.post("/create_case", upload.array("files", 5), async (req, res) => {
+  try {
   const { department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description } = req.body;
 
   // Generate PIN for access
@@ -102,22 +116,39 @@ app.post("/create_case", async (req, res) => {
 
   const c = await db.createCase({ department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description, pin_hash: pinHash });
 
+  // Save uploaded attachments
+  if (req.files && req.files.length) {
+    for (const f of req.files) {
+      try {
+        await db.addAttachment(c.id, f.originalname, f.mimetype, f.buffer.toString("base64"));
+      } catch (e) { console.error("attach error:", e.message); }
+    }
+  }
+
   const caseData = {
     case_number: c.case_number, department: c.department,
     applicant_name: c.applicant_name, spouse_name: c.spouse_name,
     other_parties: c.other_parties, description: c.description
   };
 
-  // SMS with PIN to participants
   const pinMsg = (name) => `Vážený/á ${name}, Váš přístupový PIN k spisu ${c.case_number} je: ${pin}. UCHOVEJTE SI HO – bude potřeba pro přístup k detailům a rozhodnutí (PDF). Nikomu ho nesdělujte.`;
 
-  if (c.applicant_phone) {
-    await sms.sendSms(c.applicant_phone, ai.generateSmsContent("applicant", caseData, "zahájení") + " " + pinMsg(c.applicant_name), c.case_number, c.applicant_name);
-  }
-  if (c.spouse_phone) {
-    await sms.sendSms(c.spouse_phone, ai.generateSmsContent("spouse", caseData, "zahájení") + " " + pinMsg(c.spouse_name), c.case_number, c.spouse_name);
-  }
+  // Send SMS in background so the browser gets an immediate redirect
+  const smsWork = (async () => {
+    if (c.applicant_phone) {
+      await sms.sendSms(c.applicant_phone, ai.generateSmsContent("applicant", caseData, "zahájení") + " " + pinMsg(c.applicant_name), c.case_number, c.applicant_name);
+    }
+    if (c.spouse_phone) {
+      await sms.sendSms(c.spouse_phone, ai.generateSmsContent("spouse", caseData, "zahájení") + " " + pinMsg(c.spouse_name), c.case_number, c.spouse_name);
+    }
+  })();
+  runInBackground(smsWork);
 
+  } catch (e) {
+    console.error("create_case error:", e.message, e.stack);
+    res.redirect("/");
+    return;
+  }
   res.redirect("/");
 });
 
