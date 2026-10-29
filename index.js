@@ -31,7 +31,9 @@ async function processDueCases() {
       }
       db.updateCase(c.id, { status: "Ukončeno - Vydán rozsudek", verdict, pdf_base64: pdfBase64 });
       const updated = db.getCaseById(c.id);
-      const completionMsg = (recipientType) => `Vážený/á ${recipientType === "applicant" ? updated.applicant_name : updated.spouse_name}, ve věci sp. zn. ${updated.case_number} byl vydán konečný soudní rozsudek oddělením ${updated.department}. Rozhodnutí (PDF) je dostupné v portálu soudu. Řízení je tímto pravomocně ukončeno.`;
+      const baseUrl = process.env.BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+      const pdfLink = baseUrl ? `${baseUrl}/case/${updated.id}/pdf` : `/case/${updated.id}/pdf`;
+      const completionMsg = (recipientType) => `Vážený/á ${recipientType === "applicant" ? updated.applicant_name : updated.spouse_name}, ve věci sp. zn. ${updated.case_number} byl vydán konečný soudní rozsudek oddělením ${updated.department}. Rozhodnutí (PDF) ke stažení: ${pdfLink} . Řízení je tímto pravomocně ukončeno.`;
       if (updated.applicant_phone) {
         await sms.sendSms(updated.applicant_phone, completionMsg("applicant"), updated.case_number, updated.applicant_name);
       }
