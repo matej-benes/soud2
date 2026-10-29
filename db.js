@@ -66,7 +66,16 @@ async function initTurso() {
     resolve_at TEXT,
     judge_name TEXT,
     verdict TEXT,
-    pdf_base64 TEXT
+    pdf_base64 TEXT,
+    pin_hash TEXT
+  )`);
+  await tursoClient.execute(`CREATE TABLE IF NOT EXISTS attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    case_id INTEGER,
+    filename TEXT,
+    mimetype TEXT,
+    data_base64 TEXT,
+    uploaded_at TEXT
   )`);
   await tursoClient.execute(`CREATE TABLE IF NOT EXISTS staff (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -131,7 +140,6 @@ async function getCases() {
 }
 
 function mapCase(row) {
-  // libsql returns object-like rows
   return {
     id: row.id,
     case_number: row.case_number,
@@ -148,7 +156,8 @@ function mapCase(row) {
     resolve_at: row.resolve_at,
     judge_name: row.judge_name,
     verdict: row.verdict,
-    pdf_base64: row.pdf_base64
+    pdf_base64: row.pdf_base64,
+    pin_hash: row.pin_hash
   };
 }
 
@@ -187,10 +196,10 @@ async function createCase(payload) {
 
   if (USE_TURSO) {
     const r = await tursoClient.execute({
-      sql: `INSERT INTO cases (case_number, department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description, status, created_at, deadline_at, resolve_at, judge_name, verdict, pdf_base64)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      sql: `INSERT INTO cases (case_number, department, applicant_name, applicant_phone, spouse_name, spouse_phone, other_parties, description, status, created_at, deadline_at, resolve_at, judge_name, verdict, pdf_base64, pin_hash)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       args: [caseNum, payload.department, payload.applicant_name, payload.applicant_phone || "", payload.spouse_name || "", payload.spouse_phone || "", payload.other_parties || "", payload.description,
-        "Zahájeno (Probíhá šetření)", now.toISOString(), deadlineAt.toISOString(), resolveAt.toISOString(), judge.name, verdict, null]
+        "Zahájeno (Probíhá šetření)", now.toISOString(), deadlineAt.toISOString(), resolveAt.toISOString(), judge.name, verdict, null, payload.pin_hash || null]
     });
     const id = Number(r.lastInsertRowid);
     return await getCaseById(id);
@@ -213,7 +222,8 @@ async function createCase(payload) {
     resolve_at: resolveAt.toISOString(),
     judge_name: judge.name,
     verdict,
-    pdf_base64: null
+    pdf_base64: null,
+    pin_hash: payload.pin_hash || null
   };
   data.cases.push(c);
   saveJson(data);
@@ -284,6 +294,65 @@ async function updateCase(id, patch) {
   return data.cases[idx];
 }
 
+// ---------- PIN helpers ----------
+const crypto = require("crypto");
+function hashPin(pin) {
+  return crypto.createHash("sha256").update(String(pin)).digest("hex");
+}
+function generatePin() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function setPinHash(caseId, pinHash) {
+  return await updateCase(caseId, { pin_hash: pinHash });
+}
+async function verifyPin(caseId, pin) {
+  const c = await getCaseById(caseId);
+  if (!c || !c.pin_hash) return false;
+  return c.pin_hash === hashPin(pin);
+}
+
+// ---------- Attachments ----------
+async function addAttachment(caseId, filename, mimetype, base64Data) {
+  await ensureInit();
+  if (USE_TURSO) {
+    const r = await tursoClient.execute({
+      sql: "INSERT INTO attachments (case_id, filename, mimetype, data_base64, uploaded_at) VALUES (?,?,?,?,?)",
+      args: [caseId, filename, mimetype, base64Data, new Date().toISOString()]
+    });
+    return Number(r.lastInsertRowid);
+  }
+  // JSON fallback: store in a separate attachments array in data
+  const data = initJson();
+  if (!data.attachments) data.attachments = [];
+  const id = (data.attachments.length ? Math.max(...data.attachments.map(a => a.id)) + 1 : 1);
+  data.attachments.push({ id, case_id: caseId, filename, mimetype, data_base64: base64Data, uploaded_at: new Date().toISOString() });
+  saveJson(data);
+  return id;
+}
+
+async function getAttachments(caseId) {
+  await ensureInit();
+  if (USE_TURSO) {
+    const r = await tursoClient.execute({ sql: "SELECT id, case_id, filename, mimetype, uploaded_at FROM attachments WHERE case_id = ?", args: [caseId] });
+    return r.rows.map(row => ({ id: row.id, case_id: row.case_id, filename: row.filename, mimetype: row.mimetype, uploaded_at: row.uploaded_at }));
+  }
+  const data = initJson();
+  return (data.attachments || []).filter(a => a.case_id === caseId).map(a => ({ id: a.id, case_id: a.case_id, filename: a.filename, mimetype: a.mimetype, uploaded_at: a.uploaded_at }));
+}
+
+async function getAttachment(attId) {
+  await ensureInit();
+  if (USE_TURSO) {
+    const r = await tursoClient.execute({ sql: "SELECT * FROM attachments WHERE id = ?", args: [attId] });
+    if (r.rows.length === 0) return null;
+    const row = r.rows[0];
+    return { id: row.id, case_id: row.case_id, filename: row.filename, mimetype: row.mimetype, data_base64: row.data_base64, uploaded_at: row.uploaded_at };
+  }
+  const data = initJson();
+  return (data.attachments || []).find(a => a.id === attId) || null;
+}
+
 async function resetAll() {
   await ensureInit();
   if (USE_TURSO) {
@@ -302,5 +371,7 @@ module.exports = {
   USE_TURSO,
   ensureInit,
   getStaff, getStaffByDept, getCases, getCaseById, getCaseByNumber,
-  createCase, addSmsLog, getSmsLogs, getSmsLogsByCase, updateCase, resetAll
+  createCase, addSmsLog, getSmsLogs, getSmsLogsByCase, updateCase, resetAll,
+  generatePin, hashPin, verifyPin, setPinHash,
+  addAttachment, getAttachments, getAttachment
 };

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Průvodce podáním žádosti – AI Soud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', system-ui, sans-serif; }</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <header class="border-b border-slate-800/80">
+        <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="/" class="text-slate-400 hover:text-white text-sm">← Zpět</a>
+            <h1 class="text-lg font-semibold text-white">🧙 Průvodce podáním žádosti</h1>
+            <span class="text-xs text-slate-500">Krok <span id="stepNum">1</span> / 5</span>
+        </div>
+    </header>
+
+    <!-- Progress bar -->
+    <div class="max-w-3xl mx-auto px-4 mt-4">
+        <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div id="progress" class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300" style="width:20%"></div>
+        </div>
+    </div>
+
+    <main class="max-w-3xl mx-auto px-4 py-8">
+        <form action="/create_case" method="POST" id="wizardForm" enctype="multipart/form-data">
+            <!-- Step 1: Department -->
+            <div class="step" data-step="1">
+                <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <h2 class="text-xl font-semibold text-white">1. Jaký je předmět vaší žádosti?</h2>
+                    <p class="text-sm text-slate-400">Vyberte oddělení soudu, které se vaším případem bude zabývat.</p>
+                    <div class="space-y-2">
+                        <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-700 hover:border-emerald-600 cursor-pointer transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-900/20">
+                            <input type="radio" name="department" value="Rozvody" required class="mt-1">
+                            <div>
+                                <div class="font-semibold text-white">⚖️ Rozvod manželství</div>
+                                <div class="text-xs text-slate-400 mt-0.5">Chcete se rozvést, vypořádat majetek (SJM), upravit péči o děti.</div>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-700 hover:border-emerald-600 cursor-pointer transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-900/20">
+                            <input type="radio" name="department" value="OSPOD" class="mt-1">
+                            <div>
+                                <div class="font-semibold text-white">🛡️ Ochrana dětí (OSPOD)</div>
+                                <div class="text-xs text-slate-400 mt-0.5">Obavy o bezpečnost/dobré jméno dítěte, sociální šetření, péče.</div>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-700 hover:border-emerald-600 cursor-pointer transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-900/20">
+                            <input type="radio" name="department" value="Matrika" class="mt-1">
+                            <div>
+                                <div class="font-semibold text-white">💍 Svatba / partnerství</div>
+                                <div class="text-xs text-slate-400 mt-0.5">Uzavření manželství, registrované partnerství, předmanželská smlouva.</div>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-700 hover:border-emerald-600 cursor-pointer transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-900/20">
+                            <input type="radio" name="department" value="Arbitráž" class="mt-1">
+                            <div>
+                                <div class="font-semibold text-white">💬 Složitý vztah / rozchod</div>
+                                <div class="text-xs text-slate-400 mt-0.5">Rozchod nesezdaných partnerů, vícečlenné vztahy, majetkové vypořádání.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Parties -->
+            <div class="step hidden" data-step="2">
+                <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <h2 class="text-xl font-semibold text-white">2. Kdo jsou účastníci řízení?</h2>
+                    <p class="text-sm text-slate-400">Uveďte jména a telefony. Telefon je nutný pro zasílání SMS (přístupový PIN, průběh, rozhodnutí).</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Vy (navrhovatel) *</label>
+                            <input type="text" name="applicant_name" required placeholder="Jan Novák" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-200 focus:border-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Váš telefon</label>
+                            <input type="text" name="applicant_phone" placeholder="+420 603 123 456" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-200 focus:border-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Druhý účastník</label>
+                            <input type="text" name="spouse_name" placeholder="Jana Nováková" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-200 focus:border-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Jeho/její telefon</label>
+                            <input type="text" name="spouse_phone" placeholder="+420 603 654 321" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-200 focus:border-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Ostatní dotčené osoby (děti, svědci...)</label>
+                        <input type="text" name="other_parties" placeholder="např. syn Petr (12 let), dcera Anna (8 let)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-200 focus:border-emerald-500 focus:outline-none">
+                        <p class="text-xs text-slate-500 mt-1">💡 Uveďte věk dětí – soud ho potřebuje pro rozhodnutí o péči.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Description -->
+            <div class="step hidden" data-step="3">
+                <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <h2 class="text-xl font-semibold text-white">3. Popište situaci</h2>
+                    <p class="text-sm text-slate-400">Čím podrobněji, tím přesnější bude rozhodnutí. Soud analyzuje text a hledá klíčové faktory.</p>
+                    <textarea name="description" rows="8" required placeholder="Např.: Jsme manželé 10 let, máme dvě děti (12 a 8 let). Manželství je rozvráceno kvůli nevěře manžela. Máme společný byt v hodnotě 3 mil. Kč a úspory 500 tis. Kč. Dluhy nemáme. Děti chci do střídavé péče. Příjem manžela 45 tis., můj 30 tis. Bydlím u rodičů." class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-200 focus:border-emerald-500 focus:outline-none resize-none"></textarea>
+                    <div class="bg-slate-800/50 rounded-xl p-4 text-xs text-slate-400 space-y-1">
+                        <div class="font-semibold text-slate-300 mb-1">💡 Tipy pro lepší rozhodnutí:</div>
+                        <div>• Uveďte <strong>důvod</strong> rozvratu (nevěra, násilí, odcizení, závislost...)</div>
+                        <div>• Zmíňte <strong>majetek</strong> (byt, dům, auto, úspory, dluhy)</div>
+                        <div>• Popište <strong>péči o děti</strong> (kdo se stará, kde bydlí, příjmy)</div>
+                        <div>• Uveďte, zda jste v <strong>dohodě</strong> nebo <strong>sporu</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Attachments -->
+            <div class="step hidden" data-step="4">
+                <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <h2 class="text-xl font-semibold text-white">4. Přílohy (důkazy, fotografie)</h2>
+                    <p class="text-sm text-slate-400">Přiložte důkazy – fotografie, smlouvy, výpisy, zprávy. (Max 4 MB na soubor, do 5 souborů.)</p>
+                    <div class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center">
+                        <input type="file" name="files" multiple accept="image/*,.pdf,.doc,.docx" class="text-sm text-slate-300">
+                        <p class="text-xs text-slate-500 mt-2">Přílohy lze dodat i později v detailu spisu.</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-xl p-4 text-xs text-slate-400">
+                        <div class="font-semibold text-slate-300 mb-1">📎 Co přiložit:</div>
+                        <div>• Fotografie (komunikace, bydlení, zranění...)</div>
+                        <div>• Smlouvy, výpisy z účtu, daňová přiznání</div>
+                        <div>• Rozhodnutí jiných úřadů, lékařské zprávy</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Review -->
+            <div class="step hidden" data-step="5">
+                <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <h2 class="text-xl font-semibold text-white">5. Kontrola a odeslání</h2>
+                    <p class="text-sm text-slate-400">Zkontrolujte údaje. Po odeslání soud zahájí řízení, stanoví zákonnou lhůtu a odešle vám SMS s přístupovým PINem.</p>
+                    <div id="review" class="bg-slate-800/50 rounded-xl p-4 text-sm text-slate-300 space-y-2"></div>
+                    <div class="bg-amber-900/30 border border-amber-700/50 rounded-xl p-4 text-xs text-amber-200">
+                        ⚠️ <strong>Důležité:</strong> Po odeslání obdržíte SMS s 6místným PINem. Uchovejte si ho – bez něj nelze přistoupit k detailům spisu, rozhodnutí (PDF) ani přílohám. Nikomu ho nesdělujte.
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 font-semibold py-3 rounded-xl transition shadow-lg text-white">
+                        🏛️ Odeslat žádost k soudu
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="flex justify-between mt-6">
+                <button type="button" id="prevBtn" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition hidden">← Zpět</button>
+                <div class="flex-1"></div>
+                <button type="button" id="nextBtn" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition">Další →</button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        const steps = document.querySelectorAll('.step');
+        let current = 1;
+        const total = steps.length;
+
+        function showStep(n) {
+            steps.forEach(s => s.classList.add('hidden'));
+            document.querySelector(`.step[data-step="${n}"]`).classList.remove('hidden');
+            document.getElementById('stepNum').textContent = n;
+            document.getElementById('progress').style.width = (n / total * 100) + '%';
+            document.getElementById('prevBtn').classList.toggle('hidden', n === 1);
+            document.getElementById('nextBtn').classList.toggle('hidden', n === total);
+            if (n === total) buildReview();
+        }
+
+        function buildReview() {
+            const f = document.getElementById('wizardForm');
+            const data = new FormData(f);
+            const dept = data.get('department') || '—';
+            const name = data.get('applicant_name') || '—';
+            const spouse = data.get('spouse_name') || '—';
+            const desc = data.get('description') || '—';
+            document.getElementById('review').innerHTML = `
+                <div><strong>Oddělení:</strong> ${dept}</div>
+                <div><strong>Navrhovatel:</strong> ${name}</div>
+                <div><strong>Druhý účastník:</strong> ${spouse}</div>
+                <div><strong>Ostatní:</strong> ${data.get('other_parties') || '—'}</div>
+                <div class="mt-2"><strong>Popis:</strong> ${desc.substring(0,200)}${desc.length>200?'...':''}</div>
+            `;
+        }
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            if (current < total) { current++; showStep(current); }
+        });
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            if (current > 1) { current--; showStep(current); }
+        });
+
+        showStep(1);
+    </script>
+</body>
+</html>

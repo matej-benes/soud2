@@ -153,6 +153,28 @@
             <% } %>
         </div>
 
+        <!-- Attachments -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-base font-semibold text-white mb-3 flex items-center gap-2"><span>📎</span> Přílohy (důkazy, fotografie)</h2>
+            <% if (attachments && attachments.length > 0) { %>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                <% attachments.forEach(function(a){ %>
+                <a href="/case/<%= c.id %>/attachment/<%= a.id %>" target="_blank" class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-3 hover:border-emerald-600 transition text-center">
+                    <div class="text-2xl mb-1"><%= (a.mimetype||'').startsWith('image/') ? '🖼️' : '📄' %></div>
+                    <div class="text-xs text-slate-300 truncate" title="<%= a.filename %>"><%= a.filename %></div>
+                    <div class="text-[10px] text-slate-500 mt-0.5"><%= a.uploaded_at.substring(0,10) %></div>
+                </a>
+                <% }) %>
+            </div>
+            <% } else { %>
+            <div class="text-sm text-slate-500 mb-4">Zatím žádné přílohy.</div>
+            <% } %>
+            <form action="/case/<%= c.id %>/attachments" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-2 items-center">
+                <input type="file" name="files" multiple accept="image/*,.pdf,.doc,.docx" class="text-sm text-slate-300 flex-1">
+                <button type="submit" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-xl text-sm transition whitespace-nowrap">📎 Nahrát přílohy</button>
+            </form>
+        </div>
+
         <!-- SMS history -->
         <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
             <h2 class="text-base font-semibold text-white mb-3 flex items-center gap-2"><span>📱</span> Odeslané Odorik SMS zprávy v tomto spisu</h2>

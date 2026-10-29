@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Přístup chráněn PIN – <%= c.case_number %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', system-ui, sans-serif; }</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-slate-900/80 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+        <div class="text-center mb-6">
+            <div class="text-5xl mb-3">🔒</div>
+            <h1 class="text-xl font-bold text-white">Přístup chráněn PINem</h1>
+            <p class="text-sm text-slate-400 mt-2">Spis <span class="text-emerald-400 font-semibold"><%= c.case_number %></span> obsahuje citlivé údaje. Zadejte 6místný PIN, který jste obdrželi SMS při zahájení řízení.</p>
+        </div>
+        <% if (error) { %>
+        <div class="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-xl p-3 mb-4"><%= error %></div>
+        <% } %>
+        <form action="/case/<%= c.id %>/verify" method="POST" class="space-y-4">
+            <input type="text" name="pin" maxlength="6" pattern="[0-9]{6}" required placeholder="••••••" autofocus
+                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-center text-2xl tracking-[0.5em] text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition">
+            <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 font-semibold py-3 rounded-xl transition shadow-lg text-white">
+                🔓 Odemknout spis
+            </button>
+        </form>
+        <div class="mt-6 text-xs text-slate-500 text-center leading-relaxed">
+            PIN jste obdrželi SMS zprávou při zahájení řízení. Uchovejte si ho – bez něj nelze přistoupit k detailům, rozhodnutí (PDF) ani přílohám. <br>
+            <a href="/" class="text-emerald-400 hover:underline mt-2 inline-block">← Zpět na přehled</a>
+        </div>
+    </div>
+</body>
+</html>

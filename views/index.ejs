@@ -166,12 +166,32 @@
 
                 <!-- Cases -->
                 <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                         <h2 class="text-lg font-semibold text-white flex items-center gap-2">
                             <span>📁</span> Soudní spisy a řízení
                         </h2>
-                        <div class="text-xs text-slate-500"><%= totalCases %> spisů</div>
+                        <div class="flex items-center gap-2">
+                            <a href="/wizard" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg transition font-medium">🧙 Průvodce podáním</a>
+                            <div class="text-xs text-slate-500"><%= totalCases %> spisů</div>
+                        </div>
                     </div>
+                    <!-- Search & filter -->
+                    <form method="GET" action="/" class="mb-4 flex flex-col sm:flex-row gap-2">
+                        <input type="text" name="q" value="<%= q || '' %>" placeholder="🔍 Hledat (spis, jméno, text žádosti...)" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none">
+                        <select name="department" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none">
+                            <option value="">Všechna oddělení</option>
+                            <option value="OSPOD" <%= dept==='OSPOD'?'selected':'' %>>OSPOD</option>
+                            <option value="Matrika" <%= dept==='Matrika'?'selected':'' %>>Matrika</option>
+                            <option value="Rozvody" <%= dept==='Rozvody'?'selected':'' %>>Rozvody</option>
+                            <option value="Arbitráž" <%= dept==='Arbitráž'?'selected':'' %>>Arbitráž</option>
+                        </select>
+                        <select name="status" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none">
+                            <option value="">Všechny stavy</option>
+                            <option value="pending" <%= status==='pending'?'selected':'' %>>Probíhá</option>
+                            <option value="resolved" <%= status==='resolved'?'selected':'' %>>Ukončeno</option>
+                        </select>
+                        <button type="submit" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-xl text-sm transition">Filtrovat</button>
+                    </form>
 
                     <% if (!cases || cases.length === 0) { %>
                     <div class="text-center py-16">
