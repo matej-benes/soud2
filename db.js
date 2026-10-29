@@ -60,6 +60,10 @@ async function initTurso() {
   await tursoClient.execute(`CREATE TABLE IF NOT EXISTS staff (id INTEGER PRIMARY KEY AUTOINCREMENT, department TEXT, name TEXT, role TEXT, personality TEXT)`);
   await tursoClient.execute(`CREATE TABLE IF NOT EXISTS sms_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, case_number TEXT, recipient_phone TEXT, recipient_name TEXT, message TEXT, sent_at TEXT, status TEXT)`);
   await tursoClient.execute(`CREATE TABLE IF NOT EXISTS attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, filename TEXT, mimetype TEXT, data_base64 TEXT, uploaded_at TEXT)`);
+  // Migration: add missing columns to existing tables
+  for (const col of ["pin_hash TEXT", "pdf_base64 TEXT", "resolve_at TEXT"]) {
+    try { await tursoClient.execute(`ALTER TABLE cases ADD COLUMN ${col}`); } catch (e) { /* column may already exist */ }
+  }
   const r = await tursoClient.execute("SELECT COUNT(*) as c FROM staff");
   const cnt = r.rows[0].c ?? r.rows[0][0];
   if (cnt == 0) {
@@ -75,6 +79,10 @@ async function initPg() {
   await pgSql`CREATE TABLE IF NOT EXISTS staff (id SERIAL PRIMARY KEY, department TEXT, name TEXT, role TEXT, personality TEXT)`;
   await pgSql`CREATE TABLE IF NOT EXISTS sms_logs (id SERIAL PRIMARY KEY, case_number TEXT, recipient_phone TEXT, recipient_name TEXT, message TEXT, sent_at TEXT, status TEXT)`;
   await pgSql`CREATE TABLE IF NOT EXISTS attachments (id SERIAL PRIMARY KEY, case_id INTEGER, filename TEXT, mimetype TEXT, data_base64 TEXT, uploaded_at TEXT)`;
+  // Migration: add missing columns
+  for (const col of ["pin_hash", "pdf_base64", "resolve_at"]) {
+    try { await pgSql`ALTER TABLE cases ADD COLUMN IF NOT EXISTS ${pgSql.unsafe(col)} TEXT`; } catch (e) {}
+  }
   const rows = await pgSql`SELECT COUNT(*)::int as c FROM staff`;
   if (rows[0].c == 0) {
     for (const s of defaultStaff) {
