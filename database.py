@@ -6,10 +6,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_FILE = "soud.db"
+DB_FILE = "/tmp/soud.db" # Na Vercelu je zapisovatelný pouze /tmp adresář
 
-# Odorik API configuration
-# Zadejte své Odorik API heslo (nebo token) a výchozí číslo/SMS bránu.
 ODORIK_API_USER = os.getenv("ODORIK_API_USER", "")
 ODORIK_API_PASSWORD = os.getenv("ODORIK_API_PASSWORD", "")
 ODORIK_SMS_URL = "https://www.odorik.cz/api/v1/sms"
@@ -18,7 +16,6 @@ def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
-    # Žádosti / Spisy
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS cases (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +35,6 @@ def init_db():
     )
     """)
     
-    # Zaměstnanci soudu
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS staff (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +45,6 @@ def init_db():
     )
     """)
     
-    # Log SMS zpráv
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS sms_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,7 +57,6 @@ def init_db():
     )
     """)
     
-    # Vložení výchozích zaměstnanců, pokud tabulka prázdná
     cursor.execute("SELECT COUNT(*) FROM staff")
     if cursor.fetchone()[0] == 0:
         default_staff = [
@@ -77,10 +71,9 @@ def init_db():
     conn.commit()
     conn.close()
 
-def send_odorik_sms(phone: string, message: string, case_number: string, recipient_name: string):
+def send_odorik_sms(phone: str, message: str, case_number: str, recipient_name: str):
     full_message = f"SOUD shazamské repub. : - {message}"
     
-    # Uložení do logu
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute(
@@ -91,7 +84,6 @@ def send_odorik_sms(phone: string, message: string, case_number: string, recipie
     conn.commit()
     conn.close()
 
-    # Odeslání přes Odorik API (pokud jsou nastaveny údaje)
     if ODORIK_API_USER and ODORIK_API_PASSWORD and phone:
         try:
             payload = {
@@ -106,7 +98,6 @@ def send_odorik_sms(phone: string, message: string, case_number: string, recipie
         except Exception as e:
             status = f"EXCEPTION: {str(e)}"
     else:
-        # Simulace odeslání, pokud chybí Odorik přihlášení
         status = "SIMULATED (No Odorik credentials)"
         print(f"[SMS SIMULATION] To: {phone} ({recipient_name}) | Msg: {full_message}")
 
