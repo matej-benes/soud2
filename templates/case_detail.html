@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Detail spisu {{ case[1] }} - AI Soud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <header class="bg-slate-800 border-b border-slate-700 py-6 shadow-lg">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-emerald-400">⚖️ Detail soudního spisu: {{ case[1] }}</h1>
+                <p class="text-sm text-slate-400 mt-1">Oddělení: {{ case[2] }} | Soudce/Úředník: {{ case[12] }}</p>
+            </div>
+            <a href="/" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-lg text-sm border border-slate-600 transition">
+                &larr; Zpět na přehled soudu
+            </a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Info o spisu -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl lg:col-span-1 space-y-6">
+            <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Stav řízení</h3>
+                <p class="text-lg font-bold text-amber-400 mt-1">{{ case[9] }}</p>
+            </div>
+
+            <div class="border-t border-slate-700 pt-4">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Účastníci řízení</h3>
+                <div class="mt-2 space-y-2 text-sm">
+                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                        <div class="text-xs text-slate-400 font-semibold uppercase">Navrhovatel</div>
+                        <div class="font-bold text-emerald-300">{{ case[3] }}</div>
+                        <div class="text-xs text-slate-400">Tel: {{ case[4] or 'neuvedeno' }}</div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                        <div class="text-xs text-slate-400 font-semibold uppercase">Druhý účastník</div>
+                        <div class="font-bold text-emerald-300">{{ case[5] }}</div>
+                        <div class="text-xs text-slate-400">Tel: {{ case[6] or 'neuvedeno' }}</div>
+                    </div>
+                    {% if case[7] %}
+                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                        <div class="text-xs text-slate-400 font-semibold uppercase">Ostatní dotčené osoby</div>
+                        <div class="text-slate-200">{{ case[7] }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="border-t border-slate-700 pt-4 text-xs text-slate-400 space-y-1">
+                <div>Zahájeno: {{ case[10][:16] }}</div>
+                <div>Zákonná lhůta (konečný termín): <span class="text-white font-semibold">{{ case[11][:16] }}</span></div>
+            </div>
+        </div>
+
+        <!-- Podrobnosti a verdikt -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl lg:col-span-2 space-y-6">
+            <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Původní podání / Žádost</h3>
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 text-slate-300 text-sm italic">
+                    "{{ case[8] }}"
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Výsledky vyšetřování a soudní verdikt</h3>
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 text-slate-200 text-sm whitespace-pre-line leading-relaxed">
+                    {{ case[13] }}
+                </div>
+            </div>
+
+            <!-- SMS zprávy k tomuto případu -->
+            <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Odeslané Odorik SMS zprávy v tomto spisu</h3>
+                <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden text-xs">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-800 text-slate-400 border-b border-slate-700">
+                                <th class="p-2.5">Čas</th>
+                                <th class="p-2.5">Příjemce</th>
+                                <th class="p-2.5">Zpráva</th>
+                                <th class="p-2.5">Stav</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr class="border-b border-slate-800">
+                                <td class="p-2.5 text-slate-400">{{ log[3][:16] }}</td>
+                                <td class="p-2.5">{{ log[1] }}<br><span class="text-slate-500">{{ log[0] }}</span></td>
+                                <td class="p-2.5 text-slate-300 italic">{{ log[2] }}</td>
+                                <td class="p-2.5">
+                                    <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-900 text-emerald-300">
+                                        {{ log[4] }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</body>
+</html>
