@@ -19,7 +19,7 @@ async function processDueCases() {
   for (const c of cases) {
     if (c.status === "Zahájeno (Probíhá šetření)" && c.resolve_at && new Date(c.resolve_at) <= now) {
       const judge = await db.getStaffByDept(c.department);
-      const verdict = ai.generateAnalysis(c, "verdikt");
+      const verdict = await ai.generateAnalysisAsync(c, "verdikt");
       let pdfBase64 = null;
       try {
         const buf = await pdf.generateDecisionPdf(c, verdict, judge);

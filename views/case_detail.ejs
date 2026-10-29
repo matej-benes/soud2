@@ -2,96 +2,188 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Detail spisu <%= c.case_number %> - AI Soud</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spis <%= c.case_number %> – AI Soud</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); }
+        .gradient-text { background: linear-gradient(135deg,#34d399,#10b981,#059669); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .fade-in { animation: fadeIn .4s ease-out; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
+        .timeline-dot { box-shadow: 0 0 0 4px rgba(16,185,129,.15); }
+        .scrollbar-thin::-webkit-scrollbar { width:6px; height:6px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background:#334155; border-radius:3px; }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
-    <header class="bg-slate-800 border-b border-slate-700 py-6 shadow-lg">
-        <div class="container mx-auto px-6 flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold text-emerald-400">⚖️ Detail soudního spisu: <%= c.case_number %></h1>
-                <p class="text-sm text-slate-400 mt-1">Oddělení: <%= c.department %> | Soudce/Úředník: <%= c.judge_name %></p>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
+
+    <header class="sticky top-0 z-40 glass border-b border-slate-800/80">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="/" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition border border-slate-700">←</a>
+                <div>
+                    <h1 class="font-display text-lg font-bold leading-tight gradient-text">Detail spisu</h1>
+                    <p class="text-[10px] uppercase tracking-widest text-slate-400 leading-none"><%= c.case_number %></p>
+                </div>
             </div>
-            <a href="/" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-lg text-sm border border-slate-600 transition">&larr; Zpět na přehled soudu</a>
+            <div class="flex items-center gap-2">
+                <span class="text-xs px-3 py-1.5 rounded-full <%= c.status.indexOf('Ukončeno') === 0 ? 'bg-blue-900/60 text-blue-300 border border-blue-700/60' : 'bg-amber-900/60 text-amber-300 border border-amber-700/60' %> font-medium">
+                    <%= c.status.indexOf('Ukončeno') === 0 ? '✅ Ukončeno' : '⏳ Probíhá' %>
+                </span>
+            </div>
         </div>
     </header>
-    <main class="container mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl lg:col-span-1 space-y-6">
-            <div>
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Stav řízení</h3>
-                <p class="text-lg font-bold text-amber-400 mt-1"><%= c.status %></p>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 fade-in">
+
+        <!-- Top info cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+                <div class="text-xs uppercase tracking-wider text-slate-400 mb-1">Oddělení</div>
+                <div class="text-lg font-semibold text-white"><%= c.department %></div>
             </div>
-            <div class="border-t border-slate-700 pt-4">
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Účastníci řízení</h3>
-                <div class="mt-2 space-y-2 text-sm">
-                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                        <div class="text-xs text-slate-400 font-semibold uppercase">Navrhovatel</div>
-                        <div class="font-bold text-emerald-300"><%= c.applicant_name %></div>
-                        <div class="text-xs text-slate-400">Tel: <%= c.applicant_phone || 'neuvedeno' %></div>
-                    </div>
-                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                        <div class="text-xs text-slate-400 font-semibold uppercase">Druhý účastník</div>
-                        <div class="font-bold text-emerald-300"><%= c.spouse_name %></div>
-                        <div class="text-xs text-slate-400">Tel: <%= c.spouse_phone || 'neuvedeno' %></div>
-                    </div>
-                    <% if (c.other_parties) { %>
-                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                        <div class="text-xs text-slate-400 font-semibold uppercase">Ostatní dotčené osoby</div>
-                        <div class="text-slate-200"><%= c.other_parties %></div>
-                    </div>
-                    <% } %>
-                </div>
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+                <div class="text-xs uppercase tracking-wider text-slate-400 mb-1">Soudce / Úředník</div>
+                <div class="text-lg font-semibold text-white"><%= c.judge_name %></div>
             </div>
-            <div class="border-t border-slate-700 pt-4 text-xs text-slate-400 space-y-1">
-                <div>Zahájeno: <%= c.created_at.substring(0,16).replace('T',' ') %></div>
-                <div>Zákonná lhůta (konečný termín): <span class="text-white font-semibold"><%= c.deadline_at.substring(0,16).replace('T',' ') %></span></div>
-                <div>Automatické vyřešení (demo): <%= c.resolve_at.substring(0,16).replace('T',' ') %></div>
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+                <div class="text-xs uppercase tracking-wider text-slate-400 mb-1">Zákonná lhůta</div>
+                <div class="text-lg font-semibold text-white"><%= c.deadline_at.substring(0,10) %></div>
+                <div class="text-xs text-slate-500 mt-0.5">Zahájeno: <%= c.created_at.substring(0,10) %></div>
             </div>
         </div>
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl lg:col-span-2 space-y-6">
-            <div>
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Původní podání / Žádost</h3>
-                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 text-slate-300 text-sm italic">"<%= c.description %>"</div>
-            </div>
-            <div>
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Výsledky vyšetřování a soudní verdikt</h3>
-                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 text-slate-200 text-sm whitespace-pre-line leading-relaxed"><%= c.verdict %></div>
-                <% if (c.status.indexOf('Ukončeno') === 0) { %>
-                <div class="mt-3 flex gap-2">
-                    <a href="/case/<%= c.id %>/pdf" class="inline-block bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">📄 Stáhnout rozhodnutí (PDF)</a>
+
+        <!-- Parties -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-base font-semibold text-white mb-4 flex items-center gap-2"><span>👤</span> Účastníci řízení</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4">
+                    <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-semibold mb-1">Navrhovatel</div>
+                    <div class="text-base font-semibold text-white"><%= c.applicant_name %></div>
+                    <div class="text-xs text-slate-400 mt-1">📞 <%= c.applicant_phone || 'neuvedeno' %></div>
                 </div>
-                <% } else { %>
-                <div class="mt-3">
-                    <form action="/resolve/<%= c.id %>" method="POST" class="inline">
-                        <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">⚡ Vynutit vyřešení (test)</button>
-                    </form>
-                    <span class="text-xs text-slate-500 ml-2">Pro produkci se řízení vyřeší automaticky po uplynutí lhůty.</span>
+                <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4">
+                    <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-semibold mb-1">Druhý účastník</div>
+                    <div class="text-base font-semibold text-white"><%= c.spouse_name || '—' %></div>
+                    <div class="text-xs text-slate-400 mt-1">📞 <%= c.spouse_phone || 'neuvedeno' %></div>
+                </div>
+                <% if (c.other_parties) { %>
+                <div class="md:col-span-2 bg-slate-800/50 border border-slate-700/60 rounded-xl p-4">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Ostatní dotčené osoby</div>
+                    <div class="text-sm text-slate-200"><%= c.other_parties %></div>
                 </div>
                 <% } %>
             </div>
-            <div>
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Odeslané Odorik SMS zprávy v tomto spisu</h3>
-                <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden text-xs">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-800 text-slate-400 border-b border-slate-700">
-                                <th class="p-2.5">Čas</th><th class="p-2.5">Příjemce</th><th class="p-2.5">Zpráva</th><th class="p-2.5">Stav</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% if (!logs || logs.length === 0) { %>
-                            <tr><td colspan="4" class="p-4 text-center text-slate-500">Žádné SMS zprávy.</td></tr>
-                            <% } else { logs.forEach(function(l){ %>
-                            <tr class="border-b border-slate-800">
-                                <td class="p-2.5 text-slate-400"><%= l.sent_at.substring(0,16).replace('T',' ') %></td>
-                                <td class="p-2.5"><%= l.recipient_name %><br><span class="text-slate-500"><%= l.recipient_phone %></span></td>
-                                <td class="p-2.5 text-slate-300 italic"><%= l.message %></td>
-                                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-900 text-emerald-300"><%= l.status %></span></td>
-                            </tr>
-                            <% }) } %>
-                        </tbody>
-                    </table>
+        </div>
+
+        <!-- Timeline -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-base font-semibold text-white mb-4 flex items-center gap-2"><span>🗓️</span> Průběh řízení</h2>
+            <div class="space-y-4">
+                <div class="flex gap-4">
+                    <div class="flex flex-col items-center">
+                        <div class="w-3 h-3 rounded-full bg-emerald-400 timeline-dot"></div>
+                        <div class="w-px flex-1 bg-slate-700 mt-1"></div>
+                    </div>
+                    <div class="pb-4">
+                        <div class="text-sm font-semibold text-white">Podání žádosti</div>
+                        <div class="text-xs text-slate-400"><%= c.created_at.substring(0,16).replace('T',' ') %></div>
+                        <div class="text-xs text-slate-500 mt-1">Žádost zaevidována, přidělena spisová značka, stanoven soudce.</div>
+                    </div>
                 </div>
+                <div class="flex gap-4">
+                    <div class="flex flex-col items-center">
+                        <div class="w-3 h-3 rounded-full <%= c.status.indexOf('Ukončeno') === 0 ? 'bg-emerald-400' : 'bg-amber-400' %> timeline-dot"></div>
+                        <div class="w-px flex-1 bg-slate-700 mt-1"></div>
+                    </div>
+                    <div class="pb-4">
+                        <div class="text-sm font-semibold text-white">Šetření a vyšetřování</div>
+                        <div class="text-xs text-slate-400">Probíhá</div>
+                        <div class="text-xs text-slate-500 mt-1">Sociální šetření, analýza vztahů, výzvy k vyjádření účastníkům.</div>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex flex-col items-center">
+                        <div class="w-3 h-3 rounded-full <%= c.status.indexOf('Ukončeno') === 0 ? 'bg-emerald-400' : 'bg-slate-600' %> timeline-dot"></div>
+                    </div>
+                    <div>
+                        <div class="text-sm font-semibold <%= c.status.indexOf('Ukončeno') === 0 ? 'text-white' : 'text-slate-500' %>">Vydání rozhodnutí</div>
+                        <div class="text-xs text-slate-400"><%= c.status.indexOf('Ukončeno') === 0 ? 'Dokončeno' : 'Očekáváno: ' + c.deadline_at.substring(0,10) %></div>
+                        <% if (c.status.indexOf('Ukončeno') === 0) { %>
+                        <div class="text-xs text-slate-500 mt-1">Rozsudek vydán, PDF k dispozici, SMS odeslány oběma stranám.</div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Original request -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-base font-semibold text-white mb-3 flex items-center gap-2"><span>📝</span> Původní podání / Žádost</h2>
+            <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-slate-300 text-sm italic leading-relaxed">
+                „<%= c.description %>“
+            </div>
+        </div>
+
+        <!-- Verdict -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-base font-semibold text-white mb-3 flex items-center gap-2"><span>⚖️</span> Výsledky vyšetřování a soudní verdikt</h2>
+            <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-5 text-slate-200 text-sm whitespace-pre-line leading-relaxed font-mono text-[13px]"><%= c.verdict %></div>
+
+            <% if (c.status.indexOf('Ukončeno') === 0) { %>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <a href="/case/<%= c.id %>/pdf" class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-lg shadow-emerald-900/30">
+                    <span>📄</span> Stáhnout rozhodnutí (PDF)
+                </a>
+            </div>
+            <% } else { %>
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+                <form action="/resolve/<%= c.id %>" method="POST" class="inline">
+                    <button type="submit" class="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-lg shadow-amber-900/30">
+                        <span>⚡</span> Vynutit vyřešení (test)
+                    </button>
+                </form>
+                <span class="text-xs text-slate-500">Pro produkci se řízení vyřeší automaticky po uplynutí lhůty.</span>
+            </div>
+            <% } %>
+        </div>
+
+        <!-- SMS history -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-base font-semibold text-white mb-3 flex items-center gap-2"><span>📱</span> Odeslané Odorik SMS zprávy v tomto spisu</h2>
+            <div class="overflow-x-auto scrollbar-thin">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="text-slate-400 border-b border-slate-800">
+                            <th class="text-left py-2 px-2 font-medium">Čas</th>
+                            <th class="text-left py-2 px-2 font-medium">Příjemce</th>
+                            <th class="text-left py-2 px-2 font-medium">Zpráva</th>
+                            <th class="text-left py-2 px-2 font-medium">Stav</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (!logs || logs.length === 0) { %>
+                        <tr><td colspan="4" class="py-6 text-center text-slate-500">Žádné SMS zprávy.</td></tr>
+                        <% } else { logs.forEach(function(l){ %>
+                        <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition">
+                            <td class="py-2 px-2 text-slate-400 whitespace-nowrap"><%= l.sent_at.substring(0,16).replace('T',' ') %></td>
+                            <td class="py-2 px-2">
+                                <div class="text-slate-200"><%= l.recipient_name %></div>
+                                <div class="text-slate-500 text-[10px]"><%= l.recipient_phone %></div>
+                            </td>
+                            <td class="py-2 px-2 text-slate-300 italic max-w-md"><%= l.message %></td>
+                            <td class="py-2 px-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-medium <%= (l.status.indexOf('SENT')>=0 || l.status.indexOf('SIMULATED')>=0) ? 'bg-emerald-900/60 text-emerald-300' : 'bg-red-900/60 text-red-300' %>"><%= l.status %></span>
+                            </td>
+                        </tr>
+                        <% }) } %>
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>

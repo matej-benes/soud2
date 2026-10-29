@@ -2,145 +2,258 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Soud Shazamské republiky</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); }
+        .card-hover { transition: all .25s cubic-bezier(.4,0,.2,1); }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 40px -12px rgba(16,185,129,.25); }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; transform:scale(1);} 50% { opacity:.6; transform:scale(1.3);} }
+        .fade-in { animation: fadeIn .4s ease-out; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
+        .gradient-text { background: linear-gradient(135deg,#34d399,#10b981,#059669); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .scrollbar-thin::-webkit-scrollbar { width:6px; height:6px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background:#334155; border-radius:3px; }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
-    <header class="bg-slate-800 border-b border-slate-700 py-6 shadow-lg">
-        <div class="container mx-auto px-6 flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-bold tracking-wider text-emerald-400">⚖️ AI SOUD SHAZAMSKÉ REPUBLIKY</h1>
-                <p class="text-sm text-slate-400 mt-1">Plně automatizovaný justiční systém (Node.js) s reálnými AI zaměstnanci a SMS bránou Odorik</p>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
+
+    <!-- Top nav -->
+    <header class="sticky top-0 z-40 glass border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-900/40">
+                    <span class="text-xl">⚖️</span>
+                </div>
+                <div>
+                    <h1 class="font-display text-lg font-bold leading-tight gradient-text">AI Soud</h1>
+                    <p class="text-[10px] uppercase tracking-widest text-slate-400 leading-none">Shazamská republika</p>
+                </div>
             </div>
-            <div class="bg-slate-700 px-4 py-2 rounded-lg text-sm border border-slate-600">
-                <span class="inline-block w-3 h-3 bg-emerald-500 rounded-full animate-pulse mr-2"></span>
-                Systém aktivní &nbsp;|&nbsp; Zákonné lhůty vynucovány
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/60 border border-slate-700 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                    <span class="text-slate-300">Systém aktivní</span>
+                </div>
+                <div class="text-xs text-slate-500 hidden md:block">
+                    Zákonné lhůty vynucovány
+                </div>
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl lg:col-span-1">
-            <h2 class="text-xl font-semibold mb-4 text-emerald-300 border-b border-slate-700 pb-2">📋 Podat novou žádost</h2>
-            <form action="/create_case" method="POST" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Oddělení soudu</label>
-                    <select name="department" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:border-emerald-500 focus:outline-none">
-                        <option value="OSPOD">1. OSPOD (Ochrana dětí a sociální péče)</option>
-                        <option value="Matrika">2. Matriční oddělení (Svatby a partnerství)</option>
-                        <option value="Rozvody">3. Úsek rozvodů (Rozvody a SJM)</option>
-                        <option value="Arbitráž">4. Arbitráž vztahů (Rozchody a složité vztahy 2-3+ lidí)</option>
-                    </select>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Navrhovatel (Jméno)</label>
-                        <input type="text" name="applicant_name" required placeholder="Jan Novák" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:border-emerald-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Tel. navrhovatele</label>
-                        <input type="text" name="applicant_phone" placeholder="+420603123456" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:border-emerald-500 focus:outline-none">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Druhý účastník (Manžel/ka)</label>
-                        <input type="text" name="spouse_name" placeholder="Jana Nováková" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:border-emerald-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Tel. druhého účastníka</label>
-                        <input type="text" name="spouse_phone" placeholder="+420603654321" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:border-emerald-500 focus:outline-none">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Ostatní dotčené osoby (děti, milenci...)</label>
-                    <input type="text" name="other_parties" placeholder="např. syn Petr (12 let)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:border-emerald-500 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Podrobný popis situace a požadavků</label>
-                    <textarea name="description" rows="4" required placeholder="Popište důvody, neshody, majetek, péči o děti..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 focus:border-emerald-500 focus:outline-none"></textarea>
-                </div>
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 font-semibold py-3 rounded-lg transition shadow-lg text-white">
-                    🏛️ Podat žádost k soudu
-                </button>
-            </form>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-            <form action="/admin/reset" method="POST" class="mt-4" onsubmit="return confirm('Opravdu smazat VŠECHNY spisy a SMS logy?');">
-                <button type="submit" class="w-full bg-red-700 hover:bg-red-600 font-semibold py-2 rounded-lg transition shadow text-white text-sm">
-                    🗑️ Smazat všechny spisy a řízení
-                </button>
-            </form>
-
-            <div class="mt-8">
-                <h3 class="text-lg font-semibold mb-3 text-emerald-300 border-b border-slate-700 pb-2">👥 AI Zaměstnanci soudu</h3>
-                <div class="space-y-3">
-                    <% staff.forEach(function(s){ %>
-                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 text-xs">
-                        <div class="font-bold text-emerald-400"><%= s.name %></div>
-                        <div class="text-slate-300 font-semibold"><%= s.role %> <span class="text-slate-500">(<%= s.department %>)</span></div>
-                        <div class="text-slate-400 italic mt-1"><%= s.personality %></div>
-                    </div>
-                    <% }) %>
-                </div>
+        <!-- Stats row -->
+        <%
+            const totalCases = cases ? cases.length : 0;
+            const pending = cases ? cases.filter(c => c.status.indexOf('Probíhá') >= 0).length : 0;
+            const resolved = cases ? cases.filter(c => c.status.indexOf('Ukončeno') === 0).length : 0;
+            const smsCount = smsLogs ? smsLogs.length : 0;
+        %>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 fade-in">
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+                <div class="text-xs uppercase tracking-wider text-slate-400">Celkem spisů</div>
+                <div class="text-3xl font-bold mt-1 text-white"><%= totalCases %></div>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+                <div class="text-xs uppercase tracking-wider text-amber-400">Probíhá řízení</div>
+                <div class="text-3xl font-bold mt-1 text-amber-300"><%= pending %></div>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+                <div class="text-xs uppercase tracking-wider text-blue-400">Ukončeno</div>
+                <div class="text-3xl font-bold mt-1 text-blue-300"><%= resolved %></div>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+                <div class="text-xs uppercase tracking-wider text-emerald-400">SMS odesláno</div>
+                <div class="text-3xl font-bold mt-1 text-emerald-300"><%= smsCount %></div>
             </div>
         </div>
 
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl lg:col-span-2">
-            <h2 class="text-xl font-semibold mb-4 text-emerald-300 border-b border-slate-700 pb-2">📁 Soudní spisy a řízení</h2>
-            <% if (!cases || cases.length === 0) { %>
-            <div class="text-center py-12 text-slate-500">Zatím neevidujeme žádné soudní žádosti. Vytvořte první žádost v levém formuláři.</div>
-            <% } else { %>
-            <div class="space-y-4">
-                <% cases.forEach(function(c){ %>
-                <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 hover:border-emerald-500 transition">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <span class="bg-emerald-900 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded border border-emerald-700"><%= c.case_number %></span>
-                            <span class="ml-2 text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded border border-slate-700"><%= c.department %></span>
-                            <h3 class="text-lg font-bold mt-2 text-white"><%= c.applicant_name %> vs. <%= c.spouse_name %></h3>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-xs font-semibold px-3 py-1 rounded-full <%= c.status.indexOf('Ukončeno') === 0 ? 'bg-blue-900 text-blue-300 border border-blue-700' : 'bg-amber-900 text-amber-300 border border-amber-700 animate-pulse' %>">
-                                <%= c.status %>
-                            </span>
-                            <div class="text-xs text-slate-400 mt-2">Soudce: <%= c.judge_name %></div>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex justify-between items-center text-xs text-slate-400 border-t border-slate-800 pt-3">
-                        <div>Zahájeno: <%= c.created_at.substring(0,16).replace('T',' ') %> | Zákonná lhůta do: <%= c.deadline_at.substring(0,16).replace('T',' ') %></div>
-                        <a href="/case/<%= c.id %>" class="bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white px-3 py-1.5 rounded-lg border border-slate-700 transition">Prozkoumat spis &rarr;</a>
-                    </div>
-                </div>
-                <% }) %>
-            </div>
-            <% } %>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-            <div class="mt-10">
-                <h3 class="text-lg font-semibold mb-3 text-emerald-300 border-b border-slate-700 pb-2">📱 Odorik SMS brána - Poslední zprávy</h3>
-                <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden text-xs">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-800 text-slate-400 border-b border-slate-700">
-                                <th class="p-3">Čas</th><th class="p-3">Spis</th><th class="p-3">Příjemce</th><th class="p-3">Zpráva</th><th class="p-3">Stav</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% if (!smsLogs || smsLogs.length === 0) { %>
-                            <tr><td colspan="5" class="p-4 text-center text-slate-500">Žádné odeslané SMS zprávy.</td></tr>
-                            <% } else { smsLogs.forEach(function(l){ %>
-                            <tr class="border-b border-slate-800 hover:bg-slate-800/50">
-                                <td class="p-3 text-slate-400"><%= l.sent_at.substring(0,16).replace('T',' ') %></td>
-                                <td class="p-3 font-semibold text-emerald-400"><%= l.case_number %></td>
-                                <td class="p-3"><%= l.recipient_name %><br><span class="text-slate-500"><%= l.recipient_phone %></span></td>
-                                <td class="p-3 text-slate-300 italic"><%= l.message %></td>
-                                <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] <%= (l.status.indexOf('SENT')>=0 || l.status.indexOf('SIMULATED')>=0) ? 'bg-emerald-900 text-emerald-300' : 'bg-red-900 text-red-300' %>"><%= l.status %></span></td>
-                            </tr>
-                            <% }) } %>
-                        </tbody>
-                    </table>
+            <!-- Left: Form + Staff -->
+            <aside class="lg:col-span-4 space-y-6">
+
+                <!-- New case form -->
+                <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-lg font-semibold mb-1 text-white flex items-center gap-2">
+                        <span>📋</span> Podat novou žádost
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-4">Vyplňte údaje o případu. Soud zahájí řízení a vyměří zákonnou lhůtu.</p>
+                    <form action="/create_case" method="POST" class="space-y-4" id="caseForm">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Oddělení soudu</label>
+                            <select name="department" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition">
+                                <option value="OSPOD">🛡️ OSPOD – Ochrana dětí a sociální péče</option>
+                                <option value="Matrika">💍 Matriční oddělení – Svatby a partnerství</option>
+                                <option value="Rozvody">⚖️ Úsek rozvodů – Rozvody a SJM</option>
+                                <option value="Arbitráž">💬 Arbitráž vztahů – Rozchody a složité vztahy</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Navrhovatel</label>
+                                <input type="text" name="applicant_name" required placeholder="Jan Novák" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Telefon navrhovatele</label>
+                                <input type="text" name="applicant_phone" placeholder="+420 603 123 456" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Druhý účastník</label>
+                                <input type="text" name="spouse_name" placeholder="Jana Nováková" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Telefon druhého</label>
+                                <input type="text" name="spouse_phone" placeholder="+420 603 654 321" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Ostatní dotčené osoby</label>
+                            <input type="text" name="other_parties" placeholder="např. syn Petr (12 let), dcera Anna (8 let)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Popis situace a požadavků</label>
+                            <textarea name="description" rows="5" required placeholder="Popište důvody, neshody, majetek, péči o děti, příjmy, bydlení..." class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition resize-none"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 font-semibold py-3 rounded-xl transition shadow-lg shadow-emerald-900/30 text-white flex items-center justify-center gap-2">
+                            <span>🏛️</span> Podat žádost k soudu
+                        </button>
+                    </form>
+
+                    <form action="/admin/reset" method="POST" class="mt-3" onsubmit="return confirm('Opravdu smazat VŠECHNY spisy a SMS logy?');">
+                        <button type="submit" class="w-full bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-700 font-medium py-2 rounded-xl transition text-slate-400 hover:text-red-300 text-xs">
+                            🗑️ Smazat všechny spisy a řízení
+                        </button>
+                    </form>
                 </div>
-            </div>
+
+                <!-- AI Staff -->
+                <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+                    <h3 class="text-base font-semibold mb-3 text-white flex items-center gap-2">
+                        <span>👥</span> AI Zaměstnanci soudu
+                    </h3>
+                    <div class="space-y-2.5 max-h-96 overflow-y-auto scrollbar-thin pr-1">
+                        <% staff.forEach(function(s){ %>
+                        <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3 hover:border-emerald-700/60 transition">
+                            <div class="font-semibold text-emerald-300 text-sm"><%= s.name %></div>
+                            <div class="text-xs text-slate-300 mt-0.5"><%= s.role %></div>
+                            <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5"><%= s.department %></div>
+                            <div class="text-xs text-slate-400 italic mt-1.5 leading-relaxed"><%= s.personality %></div>
+                        </div>
+                        <% }) %>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right: Cases + SMS -->
+            <section class="lg:col-span-8 space-y-6">
+
+                <!-- Cases -->
+                <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>📁</span> Soudní spisy a řízení
+                        </h2>
+                        <div class="text-xs text-slate-500"><%= totalCases %> spisů</div>
+                    </div>
+
+                    <% if (!cases || cases.length === 0) { %>
+                    <div class="text-center py-16">
+                        <div class="text-5xl mb-3 opacity-40">⚖️</div>
+                        <div class="text-slate-400">Zatím neevidujeme žádné soudní žádosti.</div>
+                        <div class="text-xs text-slate-500 mt-1">Vytvořte první žádost v levém formuláři.</div>
+                    </div>
+                    <% } else { %>
+                    <div class="space-y-3">
+                        <% cases.forEach(function(c, idx){ %>
+                        <a href="/case/<%= c.id %>" class="block bg-slate-800/40 border border-slate-700/60 rounded-xl p-4 card-hover fade-in" style="animation-delay:<%= idx*0.05 %>s">
+                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                                        <span class="bg-emerald-900/60 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-lg border border-emerald-700/60"><%= c.case_number %></span>
+                                        <span class="text-xs bg-slate-700/60 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-600/60"><%= c.department %></span>
+                                    </div>
+                                    <h3 class="text-base font-semibold text-white truncate"><%= c.applicant_name %> <span class="text-slate-500 font-normal">vs.</span> <%= c.spouse_name %></h3>
+                                    <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-400">
+                                        <span>📅 Zahájeno: <%= c.created_at.substring(0,10) %></span>
+                                        <span>⏳ Lhůta do: <%= c.deadline_at.substring(0,10) %></span>
+                                        <span>👨‍⚖️ <%= c.judge_name %></span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col items-end gap-2 shrink-0">
+                                    <span class="text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap <%= c.status.indexOf('Ukončeno') === 0 ? 'bg-blue-900/60 text-blue-300 border border-blue-700/60' : 'bg-amber-900/60 text-amber-300 border border-amber-700/60' %>">
+                                        <%= c.status.indexOf('Ukončeno') === 0 ? '✅ Ukončeno' : '⏳ Probíhá' %>
+                                    </span>
+                                    <span class="text-xs text-slate-500">Prozkoumat →</span>
+                                </div>
+                            </div>
+                        </a>
+                        <% }) %>
+                    </div>
+                    <% } %>
+                </div>
+
+                <!-- SMS log -->
+                <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+                    <h3 class="text-base font-semibold mb-3 text-white flex items-center gap-2">
+                        <span>📱</span> Odorik SMS brána – poslední zprávy
+                    </h3>
+                    <div class="overflow-x-auto scrollbar-thin">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-800">
+                                    <th class="text-left py-2 px-2 font-medium">Čas</th>
+                                    <th class="text-left py-2 px-2 font-medium">Spis</th>
+                                    <th class="text-left py-2 px-2 font-medium">Příjemce</th>
+                                    <th class="text-left py-2 px-2 font-medium">Zpráva</th>
+                                    <th class="text-left py-2 px-2 font-medium">Stav</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (!smsLogs || smsLogs.length === 0) { %>
+                                <tr><td colspan="5" class="py-6 text-center text-slate-500">Žádné odeslané SMS zprávy.</td></tr>
+                                <% } else { smsLogs.forEach(function(l){ %>
+                                <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition">
+                                    <td class="py-2 px-2 text-slate-400 whitespace-nowrap"><%= l.sent_at.substring(0,16).replace('T',' ') %></td>
+                                    <td class="py-2 px-2 font-semibold text-emerald-400 whitespace-nowrap"><%= l.case_number %></td>
+                                    <td class="py-2 px-2">
+                                        <div class="text-slate-200"><%= l.recipient_name %></div>
+                                        <div class="text-slate-500 text-[10px]"><%= l.recipient_phone %></div>
+                                    </td>
+                                    <td class="py-2 px-2 text-slate-300 italic max-w-xs truncate" title="<%= l.message %>"><%= l.message %></td>
+                                    <td class="py-2 px-2">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-medium <%= (l.status.indexOf('SENT')>=0 || l.status.indexOf('SIMULATED')>=0) ? 'bg-emerald-900/60 text-emerald-300' : 'bg-red-900/60 text-red-300' %>"><%= l.status %></span>
+                                    </td>
+                                </tr>
+                                <% }) } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
+
+    <footer class="border-t border-slate-800/60 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
+            AI Soud Shazamské republiky · Plně automatizovaný justiční systém · Rozhodnutí mají informativní charakter
+        </div>
+    </footer>
 </body>
 </html>
