@@ -259,7 +259,7 @@ app.post("/admin/reset", async (req, res) => {
 app.get("/api/cron", async (req, res) => {
   await db.ensureInit();
   await processDueCases();
-  res.json({ ok: true, backend: db.USE_TURSO ? "turso" : "json", processed: new Date().toISOString() });
+  res.json({ ok: true, backend: db.backend, processed: new Date().toISOString() });
 });
 
 // Wizard page
@@ -271,5 +271,5 @@ module.exports = app;
 
 if (require.main === module) {
   const port = process.env.PORT || 3000;
-  app.listen(port, () => console.log(`AI Soud běží na http://localhost:${port}`));
+  app.listen(port, () => console.log(`AI Soud běží na http://localhost:${port} (backend: ${db.backend})`));
 }
